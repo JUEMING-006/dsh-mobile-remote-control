@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>移动端远程控制弹窗 · 静态预览</title>
+<style>
+  /* ===== 预览页基础（不属于组件样式） ===== */
+  html, body { margin: 0; padding: 0; background: #0d0f14; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    color: #e2e8f0;
+    -webkit-font-smoothing: antialiased;
+  }
+  .preview-stage {
+    position: relative;
+    box-sizing: border-box;
+    min-height: 1000px;
+    width: 100%;
+    background: #0d0f14;
+  }
+  /* 预览时把 fixed 遮罩改为相对定位，方便整页截图 */
+  .preview-stage .dsh-rc-backdrop { position: absolute; inset: 0; }
+
+  .preview-gallery {
+    box-sizing: border-box;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 40px 32px 64px;
+  }
+  .preview-gallery h2 {
+    margin: 0 0 6px;
+    font-size: 16px;
+    font-weight: 600;
+    color: #e2e8f0;
+  }
+  .preview-gallery p {
+    margin: 0 0 18px;
+    font-size: 13px;
+    line-height: 1.7;
+    color: #828c9e;
+  }
+  .preview-pill-row { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 34px; }
+  .preview-note {
+    margin-top: 10px;
+    padding: 14px 16px;
+    border: 1px solid #2d3139;
+    border-radius: 10px;
+    background: #171920;
+    font-size: 12.5px;
+    line-height: 1.7;
+    color: #828c9e;
+  }
+
+  /* ===== 组件样式（与 client/index.js 中的 STYLES 完全一致，仅追加预览定位覆盖） ===== */
+
+      .dsh-rc-badge {
+        position: fixed; right: 20px; bottom: 20px; z-index: 9999;
+        display: inline-flex; align-items: center; gap: 8px;
+        height: 38px; padding: 0 14px; border-radius: 999px;
+        background: #1b1d24; border: 1px solid #2d3139; color: #e2e8f0;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+        font-size: 13px; font-weight: 500; line-height: 1;
+        cursor: pointer; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+        transition: background 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
+        -webkit-tap-highlight-color: transparent;
+      }
+      .dsh-rc-badge:hover { background: #23262f; border-color: #3a404d; }
+      .dsh-rc-badge:active { opacity: 0.7; }
+      .dsh-rc-badge:focus-visible { outline: 2px solid #5b667a; outline-offset: 2px; }
+      .dsh-rc-badge-icon { display: flex; color: #aab4c4; }
+
+      .dsh-rc-backdrop {
+        position: fixed; inset: 0; z-index: 2147483000;
+        display: flex; align-items: center; justify-content: center;
+        padding: 24px; background: rgba(9, 10, 14, 0.72);
+        -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px);
+      }
+      .dsh-rc-dialog {
+        position: relative; box-sizing: border-box; width: 660px; max-width: 100%;
+        max-height: calc(100vh - 48px); overflow-y: auto;
+        overscroll-behavior: contain;
+        background: #1b1d24; border: 1px solid #2d3139; border-radius: 16px;
+        box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5);
+        padding: 24px; color: #e2e8f0;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+        font-size: 15px; line-height: 1.5;
+        -webkit-tap-highlight-color: transparent;
+      }
+      .dsh-rc-dialog::-webkit-scrollbar { width: 8px; }
+      .dsh-rc-dialog::-webkit-scrollbar-thumb { background: #2d3139; border-radius: 4px; }
+
+      .dsh-rc-head { display: flex; align-items: flex-start; gap: 14px; }
+      .dsh-rc-icon-tile {
+        display: flex; align-items: center; justify-content: center;
+        width: 46px; height: 46px; flex: none;
+        border-radius: 12px; background: #23262f; border: 1px solid #2d3139;
+        color: #aab4c4;
+      }
+      .dsh-rc-head-text { flex: 1 1 auto; min-width: 0; padding-top: 1px; }
+      .dsh-rc-title { font-size: 17px; font-weight: 600; color: #e2e8f0; letter-spacing: 0.1px; }
+      .dsh-rc-subtitle { margin-top: 4px; font-size: 15px; color: #828c9e; line-height: 1.5; }
+      .dsh-rc-close {
+        display: flex; align-items: center; justify-content: center;
+        width: 28px; height: 28px; flex: none; margin: -2px -4px 0 0;
+        padding: 0; border: none; border-radius: 8px;
+        background: transparent; color: #828c9e; cursor: pointer;
+        transition: background 0.15s ease, color 0.15s ease;
+      }
+      .dsh-rc-close:hover { background: #23262f; color: #e2e8f0; }
+      .dsh-rc-close:active { opacity: 0.65; }
+      .dsh-rc-close:focus-visible { outline: 2px solid #5b667a; outline-offset: 1px; }
+
+      .dsh-rc-card {
+        margin-top: 24px; padding: 20px;
+        border: 1px solid #2d3139; border-radius: 14px;
+      }
+      .dsh-rc-card-head {
+        display: flex; align-items: center; gap: 8px;
+        font-size: 16px; font-weight: 600; color: #e2e8f0;
+      }
+      .dsh-rc-card-head-icon { display: flex; color: #aab4c4; }
+      .dsh-rc-card-desc { margin: 6px 0 0 25px; font-size: 15px; color: #828c9e; }
+
+      .dsh-rc-status { margin-top: 16px; background: #262830; border-radius: 12px; }
+      .dsh-rc-status-top {
+        display: flex; align-items: flex-start; justify-content: space-between;
+        gap: 16px; padding: 14px 16px 13px 18px;
+      }
+      .dsh-rc-status-left { flex: 1 1 auto; min-width: 0; }
+      .dsh-rc-status-line { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+      .dsh-rc-status-title { font-size: 16px; font-weight: 600; color: #e2e8f0; }
+      .dsh-rc-pill {
+        display: inline-flex; align-items: center; gap: 6px;
+        height: 22px; padding: 0 9px; border-radius: 999px;
+        background: #2d3139; color: #c3ccda;
+        font-size: 12px; font-weight: 500; white-space: nowrap;
+      }
+      .dsh-rc-pill-dot { width: 6px; height: 6px; border-radius: 50%; background: #828c9e; flex: none; }
+      .dsh-rc-status-hint { margin-top: 5px; font-size: 14px; color: #828c9e; line-height: 1.5; }
+      .dsh-rc-stop { flex: none; margin-top: 1px; }
+
+      .dsh-rc-divider { height: 1px; margin: 0 18px; background: #2d3139; }
+      .dsh-rc-noscan {
+        display: flex; align-items: center; justify-content: space-between;
+        gap: 12px; padding: 14px 14px 16px 18px;
+      }
+      .dsh-rc-noscan-text { flex: 1 1 auto; min-width: 0; font-size: 14px; color: #828c9e; line-height: 1.55; white-space: nowrap; }
+      .dsh-rc-actions { display: flex; gap: 10px; flex: none; }
+
+      .dsh-rc-btn {
+        display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+        height: 36px; padding: 0 12px; border-radius: 8px;
+        border: 1px solid #3a404d; background: transparent; color: #c7d0de;
+        font-family: inherit; font-size: 14px; font-weight: 500; line-height: 1;
+        white-space: nowrap; cursor: pointer;
+        transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, opacity 0.15s ease;
+      }
+      .dsh-rc-btn:hover { background: #2d3139; border-color: #454c5c; color: #e2e8f0; }
+      .dsh-rc-btn:active { opacity: 0.65; }
+      .dsh-rc-btn:disabled { opacity: 0.45; cursor: default; background: transparent; border-color: #3a404d; color: #c7d0de; }
+      .dsh-rc-btn:focus-visible { outline: 2px solid #5b667a; outline-offset: 1px; }
+      .dsh-rc-btn-icon { display: flex; }
+
+      .dsh-rc-banner {
+        display: flex; align-items: flex-start; gap: 8px;
+        margin-top: 14px; padding: 10px 12px; border-radius: 10px;
+        border: 1px solid rgba(248, 81, 73, 0.35);
+        background: rgba(248, 81, 73, 0.08); color: #ffb4a8; font-size: 13px;
+      }
+      .dsh-rc-banner-icon { display: flex; margin-top: 1px; flex: none; }
+      .dsh-rc-banner-text { flex: 1 1 auto; min-width: 0; word-break: break-word; }
+      .dsh-rc-banner-close {
+        display: flex; align-items: center; justify-content: center;
+        width: 22px; height: 22px; flex: none; margin: -2px -4px 0 0; padding: 0;
+        border: none; border-radius: 6px; background: transparent;
+        color: #ffb4a8; cursor: pointer; opacity: 0.8;
+      }
+      .dsh-rc-banner-close:hover { opacity: 1; background: rgba(248, 81, 73, 0.15); }
+
+      .dsh-rc-qrbox {
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        gap: 10px; margin-top: 16px; padding: 18px;
+        border: 1px dashed #353b48; border-radius: 14px;
+      }
+      .dsh-rc-qr-card {
+        padding: 16px; border-radius: 12px; background: #ffffff; line-height: 0;
+        box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
+      }
+      .dsh-rc-qr-img { display: block; width: 300px; height: 300px; }
+      .dsh-rc-qr-placeholder {
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        gap: 12px; width: 300px; height: 300px; padding: 24px;
+        color: #5b667a; font-size: 13px; line-height: 1.6; text-align: center;
+      }
+      .dsh-rc-qr-wrap { position: relative; }
+      .dsh-rc-qr-dim {
+        position: absolute; inset: 0; border-radius: 12px;
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        gap: 7px; background: rgba(27, 29, 36, 0.74); color: #e2e8f0; font-size: 14px;
+      }
+      .dsh-rc-qr-dim-sub { font-size: 12px; color: #828c9e; }
+      .dsh-rc-qr-foot {
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        gap: 7px; font-size: 12px; color: #828c9e;
+      }
+      .dsh-rc-qr-meta { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; font-size: 12px; color: #828c9e; }
+      .dsh-rc-mock { max-width: 430px; font-size: 12px; line-height: 1.6; color: #d29922; text-align: center; }
+      .dsh-rc-link {
+        display: inline-flex; align-items: center; gap: 5px;
+        padding: 0; border: none; background: none; color: #a9b6c9;
+        font-family: inherit; font-size: 12px; cursor: pointer;
+        text-decoration: underline; text-underline-offset: 2px;
+        text-decoration-color: #3a404d;
+      }
+      .dsh-rc-link:hover { color: #e2e8f0; text-decoration-color: #5b667a; }
+      .dsh-rc-link:active { opacity: 0.65; }
+      .dsh-rc-link:focus-visible { outline: 2px solid #5b667a; outline-offset: 2px; border-radius: 3px; }
+      .dsh-rc-link-icon { display: flex; }
+
+      .dsh-rc-url {
+        width: 100%; max-width: 470px; margin-top: 2px; padding: 8px 10px;
+        border: 1px solid #2d3139; border-radius: 8px; background: #171920;
+        color: #aab4c4; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; font-size: 12px;
+        line-height: 1.6; word-break: break-all; user-select: all;
+      }
+
+      .dsh-rc-qr-error {
+        display: flex; flex-direction: column; align-items: center;
+        gap: 10px; width: 100%; padding: 30px 20px; text-align: center;
+      }
+      .dsh-rc-qr-error-icon { display: flex; color: #f85149; }
+      .dsh-rc-qr-error-title { font-size: 15px; font-weight: 600; color: #e2e8f0; }
+      .dsh-rc-qr-error-msg { max-width: 430px; font-size: 13px; color: #828c9e; line-height: 1.6; word-break: break-word; }
+      .dsh-rc-qr-error-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 4px; }
+      .dsh-rc-qr-error-hint { max-width: 430px; margin-top: 2px; font-size: 12px; color: #6d7687; line-height: 1.6; }
+
+      .dsh-rc-toast {
+        position: fixed; left: 50%; bottom: 32px; transform: translateX(-50%);
+        z-index: 2147483001; padding: 8px 14px; border-radius: 8px;
+        background: #2d3139; border: 1px solid #3a404d; color: #e2e8f0;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif; font-size: 13px; line-height: 1.4;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4); max-width: 80vw;
+      }
+
+      @keyframes dsh-rc-rotate { to { transform: rotate(360deg); } }
+      @keyframes dsh-rc-fade { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+      .dsh-rc-spin { animation: dsh-rc-rotate 1s linear infinite; }
+      .dsh-rc-pulse { animation: dsh-rc-fade 1.6s ease-in-out infinite; }
+
+      @media (max-width: 720px) {
+        .dsh-rc-noscan { flex-wrap: wrap; row-gap: 10px; }
+        .dsh-rc-noscan-text { flex: 1 1 100%; white-space: normal; }
+        .dsh-rc-actions { margin-left: auto; }
+      }
+
+      @media (max-width: 640px) {
+        .dsh-rc-backdrop { padding: 12px; }
+        .dsh-rc-dialog { padding: 20px; border-radius: 14px; max-height: calc(100vh - 24px); }
+        .dsh-rc-card { padding: 16px; }
+        .dsh-rc-status-top { flex-wrap: wrap; }
+        .dsh-rc-stop { margin-left: auto; }
+        .dsh-rc-noscan { flex-direction: column; align-items: flex-start; }
+        .dsh-rc-noscan-text { max-width: none; }
+        .dsh-rc-actions { width: 100%; }
+        .dsh-rc-actions .dsh-rc-btn { flex: 1 1 0; }
+        .dsh-rc-qrbox { padding: 14px; }
+        .dsh-rc-qr-img, .dsh-rc-qr-placeholder { width: 240px; height: 240px; }
+        .dsh-rc-qr-card { padding: 14px; }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .dsh-rc-spin, .dsh-rc-pulse { animation: none !important; }
+      }
+</style>
+</head>
+<body>
+  <div class="preview-stage">
+    <div class="dsh-rc-backdrop">
+      <div class="dsh-rc-dialog" role="dialog" aria-modal="true" aria-labelledby="dsh-rc-title">
+
+        <div class="dsh-rc-head">
+          <div class="dsh-rc-icon-tile" aria-hidden="true">
+            <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" focusable="false" style="display:block;flex-shrink:0"><rect x="2" y="4" width="13.5" height="9.5" rx="1.8"></rect><path d="M6.4 17.2h5.2"></path><path d="M8.9 13.5v3.7"></path><rect x="15" y="9.5" width="6.8" height="11" rx="1.6"></rect><path d="M17.6 17.8h1.7"></path></svg>
+          </div>
+          <div class="dsh-rc-head-text">
+            <div class="dsh-rc-title" id="dsh-rc-title">移动端远程控制</div>
+            <div class="dsh-rc-subtitle">扫码或在手机上打开链接，即可远程控制当前工作区。</div>
+          </div>
+          <button type="button" class="dsh-rc-close" aria-label="关闭" title="关闭">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" focusable="false" style="display:block;flex-shrink:0"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          </button>
+        </div>
+
+        <div class="dsh-rc-card">
+          <div class="dsh-rc-card-head">
+            <span class="dsh-rc-card-head-icon" aria-hidden="true">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" focusable="false" style="display:block;flex-shrink:0"><rect x="7" y="2.3" width="10" height="19.4" rx="2"></rect><path d="M10.8 18.2h2.4"></path></svg>
+            </span>
+            <span>手机扫码连接</span>
+          </div>
+          <div class="dsh-rc-card-desc">用手机相机扫码，在手机上打开这个工作区。</div>
+
+          <div class="dsh-rc-status">
+            <div class="dsh-rc-status-top">
+              <div class="dsh-rc-status-left">
+                <div class="dsh-rc-status-line">
+                  <span class="dsh-rc-status-title">等待手机连接</span>
+                  <span class="dsh-rc-pill" role="status" aria-live="polite">
+                    <span class="dsh-rc-pill-dot" style="background:#3fb950"></span>
+                    <span>已就绪</span>
+                  </span>
+                </div>
+                <div class="dsh-rc-status-hint">用手机扫码，或在手机上打开链接。</div>
+              </div>
+              <button type="button" class="dsh-rc-btn dsh-rc-stop" title="断开所有手机端连接并停止接受新连接">
+                <span class="dsh-rc-btn-icon" aria-hidden="true">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" focusable="false" style="display:block;flex-shrink:0"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path><line x1="12" y1="2.4" x2="12" y2="11.6"></line></svg>
+                </span>
+                <span>停止</span>
+              </button>
+            </div>
+            <div class="dsh-rc-divider"></div>
+            <div class="dsh-rc-noscan">
+              <div class="dsh-rc-noscan-text">无法扫码？可在手机上打开链接。</div>
+              <div class="dsh-rc-actions">
+                <button type="button" class="dsh-rc-btn">
+                  <span class="dsh-rc-btn-icon" aria-hidden="true">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" focusable="false" style="display:block;flex-shrink:0"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"></path><path d="M16 16h5v5"></path></svg>
+                  </span>
+                  <span>刷新二维码</span>
+                </button>
+                <button type="button" class="dsh-rc-btn">
+                  <span class="dsh-rc-btn-icon" aria-hidden="true">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" focusable="false" style="display:block;flex-shrink:0"><rect x="8.5" y="8.5" width="12.5" height="12.5" rx="2"></rect><path d="M4 15.5A2 2 0 0 1 3 14V4.5A1.5 1.5 0 0 1 4.5 3H14a2 2 0 0 1 1 1"></path></svg>
+                  </span>
+                  <span>复制链接</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="dsh-rc-qrbox">
+            <div class="dsh-rc-qr-card">
+              <img class="dsh-rc-qr-img" src="data:image/png;base64,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" alt="手机扫码连接二维码" width="300" height="300" draggable="false" />
+            </div>
+            <div class="dsh-rc-qr-foot">
+              <span class="dsh-rc-qr-meta">192.168.1.100:52880</span>
+              <button type="button" class="dsh-rc-link">
+                <span>在浏览器中打开配对页</span>
+                <span class="dsh-rc-link-icon" aria-hidden="true">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" focusable="false" style="display:block;flex-shrink:0"><path d="M13.5 4.5H19.5V10.5"></path><path d="M19.5 4.5L11 13"></path><path d="M18 14.5v4A1.5 1.5 0 0 1 16.5 20h-11A1.5 1.5 0 0 1 4 18.5v-11A1.5 1.5 0 0 1 5.5 6h4"></path></svg>
+                </span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <section class="preview-gallery">
+    <h2>状态胶囊参考</h2>
+    <p>胶囊文案随真实状态变化；圆点颜色仅为状态提示，不伪造连接结果。以下为静态预览，数据不来自后台。</p>
+    <div class="preview-pill-row">
+      <span class="dsh-rc-pill"><span class="dsh-rc-pill-dot" style="background:#3fb950"></span><span>已就绪</span></span>
+      <span class="dsh-rc-pill"><span class="dsh-rc-pill-dot dsh-rc-pulse" style="background:#3fb950"></span><span>已连接 2 台</span></span>
+      <span class="dsh-rc-pill"><span class="dsh-rc-pill-dot" style="background:#828c9e"></span><span>已停止</span></span>
+      <span class="dsh-rc-pill"><span class="dsh-rc-pill-dot dsh-rc-pulse" style="background:#d29922"></span><span>加载中</span></span>
+      <span class="dsh-rc-pill"><span class="dsh-rc-pill-dot" style="background:#f85149"></span><span>连接失败</span></span>
+    </div>
+    <div class="preview-note">
+      本文件仅用于无 DSH 环境下的视觉核对，所有内容为静态示例；真实弹窗通过
+      <code>GET http://127.0.0.1:52880-52889/api/desktop/state</code> 获取状态与二维码，
+      通过 <code>POST /api/desktop/refresh</code> / <code>POST /api/desktop/stop</code> 执行真实操作。
+    </div>
+  </section>
+</body>
+</html>

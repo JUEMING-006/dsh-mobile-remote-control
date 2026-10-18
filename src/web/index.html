@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+  <title>远程控制</title>
+  <meta name="description" content="DeepSeek Harness 移动端远程控制台">
+  <meta name="theme-color" content="#F2F2F7" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+  <meta name="color-scheme" content="light dark">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="远程控制">
+  <meta name="format-detection" content="telephone=no, email=no, address=no">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" type="image/svg+xml" href="./favicon.svg">
+  <link rel="apple-touch-icon" href="./favicon.svg">
+  <link rel="stylesheet" href="./app.css">
+</head>
+<body>
+  <div id="app">
+    <div id="conn-banner" class="conn-banner" hidden>
+      <span class="conn-banner-dot" aria-hidden="true"></span>
+      <span id="conn-banner-text">连接已断开，正在重连…</span>
+    </div>
+
+    <main id="view-root">
+      <div class="boot-splash" role="status" aria-live="polite">
+        <svg class="boot-mark" viewBox="0 0 44 44" fill="none" aria-hidden="true">
+          <rect x="1" y="1" width="42" height="42" rx="11" stroke="currentColor" stroke-width="1.5"/>
+          <path d="M14 16.5 20 22l-6 5.5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M24 27.5h8" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/>
+        </svg>
+        <p class="boot-text">正在连接远程控制…</p>
+      </div>
+    </main>
+
+    <div id="sheet-root"></div>
+    <div id="toast-root" aria-live="polite"></div>
+  </div>
+
+  <noscript>
+    <div class="noscript">需要启用 JavaScript 才能使用远程控制。</div>
+  </noscript>
+
+  <script type="module" src="./app.js"></script>
+</body>
+</html>

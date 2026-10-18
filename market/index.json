@@ -1,0 +1,109 @@
+{
+  "format": 1,
+  "title": {
+    "en": "JUEMING-006's DSH plugins",
+    "zh-cn": "JUEMING-006 的 DSH 插件源"
+  },
+  "description": {
+    "en": "Community plugins for DeepSeek Harness, starting with mobile remote control.",
+    "zh-cn": "DeepSeek Harness 社区插件源，首发为移动端远程控制插件。"
+  },
+  "plugins": [
+    {
+      "name": "dsh-mobile-remote-control",
+      "title": {
+        "en": "Mobile Remote Control",
+        "zh-cn": "移动端远程控制"
+      },
+      "description": {
+        "en": "Scan a QR code in the DSH desktop app to view and control real sessions from a phone on the same LAN. No cloud relay.",
+        "zh-cn": "在 DSH 桌面端点开「手机远控」扫码，用同一局域网内的手机查看和控制真实会话；无云端中继。"
+      },
+      "icon": "./icon.svg",
+      "author": "JUEMING-006",
+      "metadata": {
+        "category": "remote-access",
+        "labels": [
+          "mobile",
+          "lan",
+          "no-cloud",
+          "open-source",
+          "approval",
+          "image-upload"
+        ],
+        "keywords": [
+          "remote-control",
+          "mobile",
+          "local-network",
+          "qr-code",
+          "deepseek-harness",
+          "approval-forwarding",
+          "image-upload"
+        ]
+      },
+      "versions": [
+        {
+          "version": "2.0.0",
+          "publishTimestamp": 1792332312,
+          "source": {
+            "type": "npm"
+          }
+        }
+      ]
+    }
+  ],
+  "metadata": {
+    "categories": {
+      "remote-access": {
+        "title": {
+          "en": "Remote Access",
+          "zh-cn": "远程访问"
+        }
+      },
+      "productivity": {
+        "title": {
+          "en": "Productivity",
+          "zh-cn": "效率工具"
+        }
+      }
+    },
+    "labels": {
+      "mobile": {
+        "title": {
+          "en": "Mobile",
+          "zh-cn": "移动端"
+        }
+      },
+      "lan": {
+        "title": {
+          "en": "LAN Only",
+          "zh-cn": "仅局域网"
+        }
+      },
+      "no-cloud": {
+        "title": {
+          "en": "No Cloud Relay",
+          "zh-cn": "无云端中继"
+        }
+      },
+      "open-source": {
+        "title": {
+          "en": "Open Source",
+          "zh-cn": "开源"
+        }
+      },
+      "approval": {
+        "title": {
+          "en": "Approval Forwarding",
+          "zh-cn": "审批转发"
+        }
+      },
+      "image-upload": {
+        "title": {
+          "en": "Image Upload",
+          "zh-cn": "图片上传"
+        }
+      }
+    }
+  }
+}

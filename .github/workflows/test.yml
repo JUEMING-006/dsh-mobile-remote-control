@@ -1,0 +1,46 @@
+name: test
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Windows / Node 24
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Syntax and static asset checks
+        shell: pwsh
+        run: |
+          node --check src/index.mjs
+          node --check client/index.js
+          node --check scripts/deploy.mjs
+          node --check scripts/rename-package.mjs
+          node --check scripts/gen-market-index.mjs
+          node -e "JSON.parse(require('fs').readFileSync('market/index.json','utf8')); JSON.parse(require('fs').readFileSync('locale/en.json','utf8')); JSON.parse(require('fs').readFileSync('locale/zh.json','utf8'));"
+          [xml](Get-Content -Raw icon.svg) | Out-Null
+          Write-Output 'static checks passed'
+
+      - name: Run test suite
+        shell: pwsh
+        run: npm test

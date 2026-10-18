@@ -1,0 +1,19 @@
+# dependencies
+node_modules/
+
+# local verification environment and references
+.verify/
+.refs/
+.tmp/
+
+# generated artifacts (screenshots, logs, reports)
+artifacts/
+
+# development planning notes
+.plan/
+
+# packaged tarballs
+*.tgz
+
+# pre-rename backups
+.backup-pre-rename*

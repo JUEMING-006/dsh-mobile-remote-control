@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" fill="none">
+  <title>Mobile Remote Control</title>
+  <desc>A phone wirelessly linked to a terminal window.</desc>
+  <g stroke="#4f7cff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="9" y="10" width="22" height="36" rx="5"/>
+    <path d="M16 15h8"/>
+    <path d="M17 41.5h6"/>
+    <path d="M31.5 39h3" stroke-dasharray="1 2.5"/>
+    <rect x="35" y="33" width="21.5" height="18" rx="4"/>
+    <path d="M40 38.5l3.5 2.75L40 44"/>
+    <path d="M47 44h5.5"/>
+    <path d="M48 10a8 8 0 0 1 8 8" opacity="0.85"/>
+    <path d="M48 14a4 4 0 0 1 4 4" opacity="0.85"/>
+  </g>
+  <circle cx="48" cy="18" r="1.6" fill="#22c55e"/>
+</svg>
