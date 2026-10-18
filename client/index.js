@@ -333,6 +333,14 @@ window.__ModuleLoader__.load({
         gap: 7px; background: rgba(27, 29, 36, 0.74); color: #e2e8f0; font-size: 14px;
       }
       .dsh-rc-qr-dim-sub { font-size: 12px; color: #828c9e; }
+      .dsh-rc-alturls {
+        display: flex; flex-direction: column; align-items: center; gap: 5px;
+        margin-top: 10px; padding-top: 10px;
+        border-top: 1px solid rgba(255, 255, 255, 0.05); width: 100%;
+      }
+      .dsh-rc-alturls-hint { font-size: 11.5px; color: #6f7a8c; }
+      .dsh-rc-alturls-url { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 11.5px; }
+
       .dsh-rc-qr-foot {
         display: flex; flex-direction: column; align-items: center; justify-content: center;
         gap: 6px; font-size: 12px; color: #6f7a8c;
@@ -567,6 +575,7 @@ window.__ModuleLoader__.load({
         state: state,
         qrDataUrl: qrDataUrl,
         pairingUrl: pairingUrl,
+        altUrls: altUrls,
         deviceCount: deviceCount,
         lanIp: lanIp,
         port: portNumber,
@@ -927,6 +936,8 @@ window.__ModuleLoader__.load({
         else statusKind = "ready";
       }
 
+      const altUrls = (snap && Array.isArray(snap.altUrls) ? snap.altUrls : []).slice(0, 4);
+
       const statusLabel =
         statusKind === "error"
           ? "连接失败"
@@ -1123,7 +1134,27 @@ window.__ModuleLoader__.load({
               { type: "button", className: "dsh-rc-link", onClick: handleOpenPairing },
               e("span", null, "在浏览器中打开配对页"),
               e("span", { className: "dsh-rc-link-icon", "aria-hidden": "true" }, IconExternal(11))
-            )
+            ),
+            altUrls.length > 0
+              ? e(
+                  "div",
+                  { className: "dsh-rc-alturls" },
+                  e("div", { className: "dsh-rc-alturls-hint" }, "其他网络入口（手机连对应网络后打开）："),
+                  altUrls.map((u) =>
+                    e(
+                      "button",
+                      {
+                        key: u,
+                        type: "button",
+                        className: "dsh-rc-link",
+                        onClick: () => copyText(u).then(() => showToast("已复制备选链接")),
+                      },
+                      e("span", { className: "dsh-rc-alturls-url" }, u.replace(/^https?:\/\//, "").split("/")[0]),
+                      e("span", { className: "dsh-rc-link-icon", "aria-hidden": "true" }, IconCopy(11))
+                    )
+                  )
+                )
+              : null
           )
         );
       }

@@ -4,7 +4,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import QRCode from 'qrcode';
-import { getPrimaryLANIP, generateToken } from './network-helper.mjs';
+import { getPrimaryLANIP, getLocalIPAddresses, generateToken } from './network-helper.mjs';
 import { WsHub } from './ws-hub.mjs';
 import { MAX_UPLOAD_BYTES } from './host-bridge.mjs';
 
@@ -148,12 +148,19 @@ export class RemoteControlServer {
   }
 
   desktopState() {
+    // 备选入口：多网卡时（WLAN + Tailscale/热点等）全部列出，主 URL 进二维码，
+    // 其余给「复制链接」下拉/列表使用 —— 手机走哪条网络都能连。
+    const altUrls = getLocalIPAddresses()
+      .map((entry) => entry.address)
+      .filter((ip) => ip !== this.lanIp)
+      .map((ip) => 'http://' + ip + ':' + this.port + '/?token=' + this.token);
     return {
       state: this.state,
       ready: this.state === 'ready',
       lanIp: this.lanIp,
       port: this.port,
       pairingUrl: this.getPairingUrl(),
+      altUrls,
       qrDataUrl: this.qrDataUrl,
       deviceCount: this.deviceCount,
       version: this.version,
