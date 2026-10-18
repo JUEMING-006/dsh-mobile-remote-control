@@ -561,6 +561,9 @@ window.__ModuleLoader__.load({
         typeof source.pairingUrl === "string" && /^https?:\/\//i.test(source.pairingUrl)
           ? source.pairingUrl
           : "";
+      const altUrls = Array.isArray(source.altUrls)
+        ? source.altUrls.filter((u) => typeof u === "string" && /^https?:\/\//i.test(u) && u !== source.pairingUrl)
+        : [];
       const deviceCount = Number.isFinite(source.deviceCount)
         ? Math.max(0, Math.trunc(source.deviceCount))
         : 0;
