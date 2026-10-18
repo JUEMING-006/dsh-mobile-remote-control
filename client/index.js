@@ -170,17 +170,22 @@ window.__ModuleLoader__.load({
 
     const STYLES = `
       .dsh-rc-root { display: contents; }
-      .dsh-rc-footer-entry {
-        flex: none; align-items: center; justify-content: center;
-        width: 42px; height: 42px; margin: 0; padding: 0;
-        background: transparent; border: none; border-radius: 12px;
+      /* 账号行内按钮：与设置触发器同排同高，点击只命中自身（原生 button，不透传） */
+      .dsh-rc-row-host { display: inline-flex; flex: none; margin-left: 2px; }
+      .dsh-rc-row-btn {
+        display: inline-flex; align-items: center; justify-content: center;
+        width: 32px; height: 32px; padding: 0; margin: 0;
+        background: transparent; border: none; border-radius: 8px;
         color: var(--dsw-alias-label-primary, #c8ccd4);
-        font-family: inherit; cursor: pointer; display: inline-flex;
+        cursor: pointer; position: relative; z-index: 1;
       }
-      .dsh-rc-footer-entry:hover, .dsh-rc-footer-entry[aria-expanded="true"] {
+      .dsh-rc-row-btn:hover {
         background: var(--dsw-alias-interactive-bg-hover, rgba(255,255,255,0.08));
+        color: var(--dsw-alias-label-primary, #e2e8f0);
       }
-      .dsh-rc-footer-entry-icon { display: inline-flex; }
+      .dsh-rc-row-btn:active { opacity: 0.7; }
+      .dsh-rc-row-btn:focus-visible { outline: 2px solid #5b667a; outline-offset: 2px; }
+      .dsh-rc-row-btn-icon { display: inline-flex; pointer-events: none; }
 
       .dsh-rc-backdrop {
         position: fixed; inset: 0; z-index: 2147483000;
@@ -1332,19 +1337,92 @@ window.__ModuleLoader__.load({
 
     function apply(ctx) {
       if (!ctx || !ctx.slots) return;
-      // 槽位注册由插件上下文持有，插件卸载 / profile 变更时自动释放
-      // 主入口：侧边栏底部 footer 动作排（cordis 图标同一排，账号行上方）
-      ctx.slots.inject("sidebar.footer.action", () =>
+      // 主入口：账号行内的「手机远控」按钮（渲染在设置触发器旁边）。
+      // 挂载方式：MutationObserver 找到账号行后把按钮插进去；点击只命中按钮自身
+      // （stopPropagation），不会透传到底下的设置入口。
+      ctx.slots.inject("shell.overlay", () =>
         ctx.slots.register(
           {
-            name: "sidebar.footer.action",
+            name: "shell.overlay",
             id: "dsh-mobile-remote-control-entry",
             inject: () => ({}),
           },
-          RemoteControlFooterEntry
+          RemoteControlRowEntry
         )
       );
+    }
 
+    // 定位账号行：设置触发按钮带 aria-label「设置」/「Settings」，其父行即账号行
+    function findAccountRow() {
+      const candidates = document.querySelectorAll('button[aria-haspopup="dialog"]');
+      for (const btn of candidates) {
+        const label = btn.getAttribute("aria-label") || "";
+        if (label === "设置" || label === "Settings" || /设置|Settings/.test(label)) {
+          return btn.closest("div");
+        }
+      }
+      return null;
+    }
+
+    function RemoteControlRowEntry() {
+      const [modalVisible, setModalVisible] = useState(false);
+      const hostRef = useRef(null);
+
+      useEffect(() => {
+        let cancelled = false;
+        let attempts = 0;
+        const tryMount = () => {
+          if (cancelled || hostRef.current) return;
+          attempts += 1;
+          const row = findAccountRow();
+          if (row && row.parentElement) {
+            const host = document.createElement("span");
+            host.className = "dsh-rc-row-host";
+            row.parentElement.insertBefore(host, row.nextSibling);
+            hostRef.current = host;
+            // 纯 DOM 渲染按钮（不依赖 react-dom，模块表未必提供）
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = "dsh-rc-row-btn";
+            btn.title = "手机远控：扫码连接";
+            btn.setAttribute("aria-label", "打开手机远控连接面板");
+            btn.setAttribute("aria-haspopup", "dialog");
+            btn.addEventListener("click", (event) => {
+              event.stopPropagation();
+              event.preventDefault();
+              setModalVisible(true);
+            });
+            const icon = document.createElement("span");
+            icon.className = "dsh-rc-row-btn-icon";
+            icon.setAttribute("aria-hidden", "true");
+            // 与 IconDesktopPhone 同形的内联 SVG（stroke 继承按钮 color）
+            icon.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="display:block" aria-hidden="true">'
+              + '<rect x="2" y="4" width="13.5" height="9.5" rx="1.8"/>'
+              + '<path d="M6.4 17.2h5.2"/><path d="M8.9 13.5v3.7"/>'
+              + '<rect x="15" y="9.5" width="6.8" height="11" rx="1.6"/>'
+              + '<path d="M17.6 17.8h1.7"/>'
+              + '</svg>';
+            btn.appendChild(icon);
+            host.appendChild(btn);
+          } else if (attempts < 100) {
+            setTimeout(tryMount, 300);
+          }
+        };
+        tryMount();
+        return () => {
+          cancelled = true;
+          if (hostRef.current) {
+            const host = hostRef.current;
+            hostRef.current = null;
+            host.remove();
+          }
+        };
+      }, []);
+
+      return e(react.Fragment, null,
+        e("style", null, STYLES),
+        e(RemoteControlModal, { visible: modalVisible, onClose: () => setModalVisible(false) })
+      );
     }
 
     exports.apply = apply;
