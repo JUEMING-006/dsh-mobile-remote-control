@@ -170,14 +170,18 @@ window.__ModuleLoader__.load({
 
     const STYLES = `
       .dsh-rc-root { display: contents; }
-      /* 账号行内按钮：与设置触发器同排同高，点击只命中自身（原生 button，不透传） */
-      .dsh-rc-row-host { display: inline-flex; flex: none; margin-left: 2px; }
+      /* 账号行内叠层：行是 display:block 且账号按钮铺满整行，所以按钮用绝对定位
+         叠在行右端。点击命中按钮本身（原生 button，z-index 高于行内元素），不透传。 */
+      .dsh-rc-row-host {
+        position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+        display: inline-flex; flex: none; align-items: center; z-index: 2;
+      }
       .dsh-rc-row-btn {
         display: inline-flex; align-items: center; justify-content: center;
         width: 32px; height: 32px; padding: 0; margin: 0;
         background: transparent; border: none; border-radius: 8px;
         color: var(--dsw-alias-label-primary, #c8ccd4);
-        cursor: pointer; position: relative; z-index: 1;
+        cursor: pointer;
       }
       .dsh-rc-row-btn:hover {
         background: var(--dsw-alias-interactive-bg-hover, rgba(255,255,255,0.08));
@@ -1352,16 +1356,26 @@ window.__ModuleLoader__.load({
       );
     }
 
-    // 定位账号行：设置触发按钮带 aria-label「设置」/「Settings」，其父行即账号行
+    // 定位账号行：左下角的账号菜单按钮（aria-label「账号菜单」/「Account」，
+    // aria-haspopup="menu"），其外层 div 即账号行。找不到时回退：视口底部 80px 内
+    // 左侧 300px 里带 aria-haspopup="menu" 的按钮。
     function findAccountRow() {
-      const candidates = document.querySelectorAll('button[aria-haspopup="dialog"]');
-      for (const btn of candidates) {
-        const label = btn.getAttribute("aria-label") || "";
-        if (label === "设置" || label === "Settings" || /设置|Settings/.test(label)) {
-          return btn.closest("div");
+      let btn = document.querySelector('button[aria-label="账号菜单"], button[aria-label="Account menu"], button[aria-label="Account"]');
+      if (!btn) {
+        for (const cand of document.querySelectorAll('button[aria-haspopup="menu"]')) {
+          const rect = cand.getBoundingClientRect();
+          if (rect.y > window.innerHeight - 90 && rect.x < 300) { btn = cand; break; }
         }
       }
-      return null;
+      if (!btn) return null;
+      // 从按钮向外找高度 32–64px 的行容器（ET65mq_root 之类）
+      let row = btn.closest("div");
+      for (let i = 0; i < 4 && row; i += 1) {
+        const h = row.getBoundingClientRect().height;
+        if (h >= 32 && h <= 64) return row;
+        row = row.parentElement;
+      }
+      return btn.closest("div");
     }
 
     function RemoteControlRowEntry() {
@@ -1378,7 +1392,8 @@ window.__ModuleLoader__.load({
           if (row && row.parentElement) {
             const host = document.createElement("span");
             host.className = "dsh-rc-row-host";
-            row.parentElement.insertBefore(host, row.nextSibling);
+            row.appendChild(host); // 行内右端（绝对定位，见 .dsh-rc-row-host 样式）
+            if (getComputedStyle(row).position === "static") row.style.position = "relative";
             hostRef.current = host;
             // 纯 DOM 渲染按钮（不依赖 react-dom，模块表未必提供）
             const btn = document.createElement("button");
