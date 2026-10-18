@@ -199,13 +199,13 @@ window.__ModuleLoader__.load({
         animation: dsh-rc-fade-in 0.18s ease;
       }
       .dsh-rc-dialog {
-        position: relative; box-sizing: border-box; width: 560px; max-width: 100%;
+        position: relative; box-sizing: border-box; width: 640px; max-width: 100%;
         max-height: calc(100vh - 48px); overflow-y: auto;
         overscroll-behavior: contain;
         background: linear-gradient(180deg, #1e2029 0%, #1b1d24 120px);
         border: 1px solid #2e3340; border-radius: 18px;
         box-shadow: 0 32px 80px rgba(0, 0, 0, 0.55), 0 2px 8px rgba(0, 0, 0, 0.3);
-        padding: 26px 28px; color: #e2e8f0;
+        padding: 20px 24px; color: #e2e8f0;
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
         font-size: 14px; line-height: 1.55;
         -webkit-tap-highlight-color: transparent;
@@ -219,11 +219,9 @@ window.__ModuleLoader__.load({
       .dsh-rc-head { display: flex; align-items: flex-start; gap: 14px; }
       .dsh-rc-icon-tile {
         display: flex; align-items: center; justify-content: center;
-        width: 44px; height: 44px; flex: none;
-        border-radius: 12px;
-        background: linear-gradient(135deg, #2a3140 0%, #23262f 100%);
-        border: 1px solid #39404f;
-        color: #9ec1ff; box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
+        width: 42px; height: 42px; flex: none;
+        border-radius: 12px; background: #23262f; border: 1px solid #2d3139;
+        color: #aab4c4;
       }
       .dsh-rc-head-text { flex: 1 1 auto; min-width: 0; padding-top: 1px; }
       .dsh-rc-title { font-size: 16px; font-weight: 650; color: #f1f5fb; letter-spacing: 0.2px; }
@@ -240,7 +238,7 @@ window.__ModuleLoader__.load({
       .dsh-rc-close:focus-visible { outline: 2px solid #5b667a; outline-offset: 1px; }
 
       .dsh-rc-card {
-        margin-top: 22px; padding: 18px;
+        margin-top: 16px; padding: 14px 16px;
         border: 1px solid #2b303c; border-radius: 14px;
         background: rgba(255, 255, 255, 0.015);
       }
@@ -258,7 +256,7 @@ window.__ModuleLoader__.load({
       }
       .dsh-rc-status-top {
         display: flex; align-items: flex-start; justify-content: space-between;
-        gap: 16px; padding: 13px 14px 12px 16px;
+        gap: 16px; padding: 11px 12px 10px 14px;
       }
       .dsh-rc-status-left { flex: 1 1 auto; min-width: 0; }
       .dsh-rc-status-line { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
@@ -276,7 +274,7 @@ window.__ModuleLoader__.load({
       .dsh-rc-divider { height: 1px; margin: 0 18px; background: #2d3139; }
       .dsh-rc-noscan {
         display: flex; align-items: center; justify-content: space-between;
-        gap: 12px; padding: 14px 14px 16px 18px;
+        gap: 12px; padding: 11px 12px 12px 14px;
       }
       .dsh-rc-noscan-text { flex: 1 1 auto; min-width: 0; font-size: 14px; color: #828c9e; line-height: 1.55; white-space: nowrap; }
       .dsh-rc-actions { display: flex; gap: 10px; flex: none; }
@@ -313,18 +311,17 @@ window.__ModuleLoader__.load({
 
       .dsh-rc-qrbox {
         display: flex; flex-direction: column; align-items: center; justify-content: center;
-        gap: 12px; margin-top: 16px; padding: 22px 18px 16px;
+        gap: 10px; margin-top: 12px; padding: 16px 14px 12px;
         border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 14px;
-        background: radial-gradient(ellipse at 50% 0%, rgba(158, 193, 255, 0.045) 0%, rgba(255,255,255,0) 65%);
       }
       .dsh-rc-qr-card {
-        padding: 14px; border-radius: 14px; background: #ffffff; line-height: 0;
+        padding: 12px; border-radius: 14px; background: #ffffff; line-height: 0;
         box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.06);
       }
-      .dsh-rc-qr-img { display: block; width: 288px; height: 288px; }
+      .dsh-rc-qr-img { display: block; width: 272px; height: 272px; }
       .dsh-rc-qr-placeholder {
         display: flex; flex-direction: column; align-items: center; justify-content: center;
-        gap: 12px; width: 288px; height: 288px; padding: 24px;
+        gap: 12px; width: 272px; height: 272px; padding: 24px;
         color: #5b667a; font-size: 13px; line-height: 1.6; text-align: center;
       }
       .dsh-rc-qr-wrap { position: relative; }
