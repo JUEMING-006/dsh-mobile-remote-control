@@ -169,21 +169,18 @@ window.__ModuleLoader__.load({
     // ---------------------------------------------------------------------
 
     const STYLES = `
-      .dsh-rc-badge {
-        position: fixed; right: 20px; bottom: 20px; z-index: 9999;
-        display: inline-flex; align-items: center; gap: 8px;
-        height: 38px; padding: 0 14px; border-radius: 999px;
-        background: #1b1d24; border: 1px solid #2d3139; color: #e2e8f0;
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
-        font-size: 13px; font-weight: 500; line-height: 1;
-        cursor: pointer; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
-        transition: background 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
-        -webkit-tap-highlight-color: transparent;
+      .dsh-rc-root { display: contents; }
+      .dsh-rc-footer-entry {
+        flex: none; align-items: center; justify-content: center;
+        width: 42px; height: 42px; margin: 0; padding: 0;
+        background: transparent; border: none; border-radius: 12px;
+        color: var(--dsw-alias-label-primary, #c8ccd4);
+        font-family: inherit; cursor: pointer; display: inline-flex;
       }
-      .dsh-rc-badge:hover { background: #23262f; border-color: #3a404d; }
-      .dsh-rc-badge:active { opacity: 0.7; }
-      .dsh-rc-badge:focus-visible { outline: 2px solid #5b667a; outline-offset: 2px; }
-      .dsh-rc-badge-icon { display: flex; color: #aab4c4; }
+      .dsh-rc-footer-entry:hover, .dsh-rc-footer-entry[aria-expanded="true"] {
+        background: var(--dsw-alias-interactive-bg-hover, rgba(255,255,255,0.08));
+      }
+      .dsh-rc-footer-entry-icon { display: inline-flex; }
 
       .dsh-rc-backdrop {
         position: fixed; inset: 0; z-index: 2147483000;
@@ -1303,26 +1300,26 @@ window.__ModuleLoader__.load({
     // 悬浮入口
     // ---------------------------------------------------------------------
 
-    function RemoteControlBadge() {
+// ---------------------------------------------------------------------
+    // 侧边栏底部入口（sidebar.footer.action 槽位：账号行上方的图标排）
+    // ---------------------------------------------------------------------
+    function RemoteControlFooterEntry() {
       const [modalVisible, setModalVisible] = useState(false);
-
       return e(
         react.Fragment,
         null,
-        e("style", { key: "dsh-mobile-remote-control-styles" }, STYLES),
         e(
           "button",
           {
             type: "button",
-            className: "dsh-rc-badge",
+            className: "dsh-rc-footer-entry",
             onClick: () => setModalVisible(true),
             title: "手机远控：扫码连接",
             "aria-label": "打开手机远控连接面板",
             "aria-haspopup": "dialog",
             "aria-expanded": modalVisible,
           },
-          e("span", { className: "dsh-rc-badge-icon", "aria-hidden": "true" }, IconDesktopPhone(16)),
-          e("span", null, "手机远控")
+          e("span", { className: "dsh-rc-footer-entry-icon", "aria-hidden": "true" }, IconDesktopPhone(16))
         ),
         e(RemoteControlModal, {
           visible: modalVisible,
@@ -1336,17 +1333,18 @@ window.__ModuleLoader__.load({
     function apply(ctx) {
       if (!ctx || !ctx.slots) return;
       // 槽位注册由插件上下文持有，插件卸载 / profile 变更时自动释放
-      ctx.slots.inject("shell.overlay", () =>
+      // 主入口：侧边栏底部 footer 动作排（cordis 图标同一排，账号行上方）
+      ctx.slots.inject("sidebar.footer.action", () =>
         ctx.slots.register(
           {
-            name: "shell.overlay",
-            id: "dsh-mobile-remote-control-badge",
-            order: 15,
+            name: "sidebar.footer.action",
+            id: "dsh-mobile-remote-control-entry",
             inject: () => ({}),
           },
-          RemoteControlBadge
+          RemoteControlFooterEntry
         )
       );
+
     }
 
     exports.apply = apply;
