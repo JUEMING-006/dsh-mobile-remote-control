@@ -178,17 +178,19 @@ window.__ModuleLoader__.load({
       }
       .dsh-rc-row-btn {
         display: inline-flex; align-items: center; justify-content: center;
-        width: 32px; height: 32px; padding: 0; margin: 0;
-        background: transparent; border: none; border-radius: 8px;
-        color: var(--dsw-alias-label-primary, #c8ccd4);
-        cursor: pointer;
+        width: 30px; height: 30px; padding: 0; margin: 0;
+        background: transparent; border: 1px solid transparent; border-radius: 8px;
+        color: var(--dsw-alias-label-tertiary, #828c9e);
+        cursor: pointer; opacity: 0.75;
+        transition: background 0.15s ease, color 0.15s ease, opacity 0.15s ease;
       }
       .dsh-rc-row-btn:hover {
-        background: var(--dsw-alias-interactive-bg-hover, rgba(255,255,255,0.08));
-        color: var(--dsw-alias-label-primary, #e2e8f0);
+        background: rgba(255, 255, 255, 0.045);
+        color: var(--dsw-alias-label-primary, #d6dce6);
+        opacity: 1;
       }
-      .dsh-rc-row-btn:active { opacity: 0.7; }
-      .dsh-rc-row-btn:focus-visible { outline: 2px solid #5b667a; outline-offset: 2px; }
+      .dsh-rc-row-btn:active { opacity: 0.6; transform: scale(0.96); }
+      .dsh-rc-row-btn:focus-visible { outline: 2px solid #5b667a; outline-offset: 1px; }
       .dsh-rc-row-btn-icon { display: inline-flex; pointer-events: none; }
 
       .dsh-rc-backdrop {
@@ -1412,7 +1414,7 @@ window.__ModuleLoader__.load({
             const btn = document.createElement("button");
             btn.type = "button";
             btn.className = "dsh-rc-row-btn";
-            btn.title = "手机远控：扫码连接";
+
             btn.setAttribute("aria-label", "打开手机远控连接面板");
             btn.setAttribute("aria-haspopup", "dialog");
             btn.addEventListener("click", (event) => {
