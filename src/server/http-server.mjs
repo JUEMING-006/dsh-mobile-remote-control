@@ -141,28 +141,33 @@ export class RemoteControlServer {
     return { url, qrDataUrl: this.qrDataUrl };
   }
 
-  stopPairing() {
+  async stopPairing() {
     this.state = 'stopped';
     if (this.wsHub) this.wsHub.revokeAllClients(4001, 'remote control stopped');
     return this.desktopState();
   }
 
-  desktopState() {
+  async desktopState() {
     // 主配对 IP 自动跟随网络变化（如刚打开 Tailscale）：下一次面板轮询（2s）即自动
     // 切换到新地址并重绘二维码，无需手动「刷新二维码」。token 不轮换，已连接的
     // 手机不会被踢。备选入口列出其余网卡的配对 URL。
+    //
+    // 注意：二维码必须与 pairingUrl 同步更新（await），否则会返回"新地址 + 旧二维码"
+    // 的组合，手机扫到的是上一个地址。
     const preferredIp = getPairingPrimaryIP();
     if (preferredIp && preferredIp !== '127.0.0.1' && preferredIp !== this.lanIp) {
       this.lanIp = preferredIp;
-      QRCode.toDataURL(this.getPairingUrl(), {
-        width: 360,
-        margin: 1,
-        errorCorrectionLevel: 'M',
-        color: { dark: '#0a0a0a', light: '#ffffff' },
-      }).then((dataUrl) => {
-        this.qrDataUrl = dataUrl;
+      try {
+        this.qrDataUrl = await QRCode.toDataURL(this.getPairingUrl(), {
+          width: 360,
+          margin: 1,
+          errorCorrectionLevel: 'M',
+          color: { dark: '#0a0a0a', light: '#ffffff' },
+        });
         this.lastQrAt = Date.now();
-      }).catch(() => {});
+      } catch {
+        // 生成失败时保留旧二维码，下一轮轮询会重试；绝不让二者指向不同地址
+      }
     }
     const altUrls = getLocalIPAddresses()
       .map((entry) => entry.address)
@@ -359,21 +364,21 @@ export class RemoteControlServer {
         return;
       }
       if (pathname === '/api/desktop/state') {
-        this.json(res, 200, this.desktopState(), true);
+        this.json(res, 200, await this.desktopState(), true);
         return;
       }
       if (pathname === '/api/desktop/refresh' && req.method === 'POST') {
         await this.refreshQRCode();
-        this.json(res, 200, this.desktopState(), true);
+        this.json(res, 200, await this.desktopState(), true);
         return;
       }
       if (pathname === '/api/desktop/stop' && req.method === 'POST') {
-        this.json(res, 200, this.stopPairing(), true);
+        this.json(res, 200, await this.stopPairing(), true);
         return;
       }
       // legacy aliases used by the previously installed desktop bundle
       if ((pathname === '/api/status' && req.method === 'GET') || (pathname === '/api/qr' && req.method === 'GET')) {
-        this.json(res, 200, this.desktopState(), true);
+        this.json(res, 200, await this.desktopState(), true);
         return;
       }
       if (pathname === '/api/refresh-qr' && req.method === 'POST') {
