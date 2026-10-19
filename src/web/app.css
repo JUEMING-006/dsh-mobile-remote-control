@@ -1225,6 +1225,16 @@ textarea {
   background: var(--subtle);
   font-family: var(--mono);
   font-size: 15px;
+  /* 长 URL / 长命令在窄屏上必须能断行，否则会把容器撑破（实测 584px > 390px 视口），
+     页面可横向滚动时移动端浏览器会显示缩放控件。 */
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+/* 消息正文整体不允许横向撑破容器（连同上面的 code 断行一起作为防线） */
+.msg-body {
+  overflow-wrap: anywhere;
+  min-width: 0;
 }
 
 .md pre {
@@ -2946,8 +2956,13 @@ textarea {
 
 
 /* ------------------------------------------------------------------ */
-/* 微信内置浏览器：宿主顶栏已显示标题与域名，页内不再重复渲染标题行      */
+/* 微信内置浏览器：宿主顶栏已占顶部（含状态栏/刘海区域），                */
+/* 因此页内不得再次叠加 safe-area-inset-top，否则顶部会空出一大条。       */
 /* ------------------------------------------------------------------ */
+.env-wechat {
+  --safe-top: 0px;
+}
+
 .env-wechat .nav-title {
   /* 微信宿主顶栏已显示会话标题；页内这一行改显示工作区，避免重复又留白 */
   font-size: 13px;
@@ -2970,7 +2985,14 @@ textarea {
 
 .env-wechat .chat-nav {
   justify-content: space-between;
+  padding-top: 5px;      /* 不叠加 safe-area：微信顶栏已占该区域 */
   padding-right: 12px;
+}
+
+/* 三个滚动容器在微信下同样不得叠加 safe-area-inset-top（双保险，不依赖变量级联） */
+.env-wechat .tasks-scroll,
+.env-wechat .settings-scroll {
+  padding-top: 10px;
 }
 
 .env-wechat .settings-title {
@@ -3160,7 +3182,7 @@ textarea {
   border: 1px solid var(--line);
   border-radius: 10px;
   padding: 9px 11px;
-  font-size: 15px;
+  font-size: 16px;
   font-family: inherit;
   color: var(--text);
   background: var(--subtle);
