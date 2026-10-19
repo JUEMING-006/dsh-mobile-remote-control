@@ -333,13 +333,25 @@ window.__ModuleLoader__.load({
         gap: 7px; background: rgba(27, 29, 36, 0.74); color: #e2e8f0; font-size: 14px;
       }
       .dsh-rc-qr-dim-sub { font-size: 12px; color: #828c9e; }
-      .dsh-rc-alturls {
-        display: flex; flex-direction: column; align-items: center; gap: 5px;
-        margin-top: 10px; padding-top: 10px;
-        border-top: 1px solid rgba(255, 255, 255, 0.05); width: 100%;
+      /* 连接方式切换：一行小胶囊，默认自动选中，点一下即可换入口 */
+      .dsh-rc-net {
+        display: flex; align-items: center; justify-content: center; gap: 6px;
+        margin-top: 10px; padding-top: 10px; width: 100%;
+        border-top: 1px solid rgba(255, 255, 255, 0.05);
       }
-      .dsh-rc-alturls-hint { font-size: 11.5px; color: #6f7a8c; }
-      .dsh-rc-alturls-url { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 11.5px; }
+      .dsh-rc-net-label { font-size: 11.5px; color: #6f7a8c; margin-right: 2px; }
+      .dsh-rc-net-chip {
+        height: 22px; padding: 0 9px; border-radius: 999px;
+        border: 1px solid rgba(255, 255, 255, 0.08); background: transparent;
+        color: #9aa5b8; font-family: inherit; font-size: 11.5px; cursor: pointer;
+        transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+      }
+      .dsh-rc-net-chip:hover { background: rgba(255, 255, 255, 0.05); color: #cdd6e2; }
+      .dsh-rc-net-chip-on {
+        background: rgba(255, 255, 255, 0.08); color: #eef2f8;
+        border-color: rgba(255, 255, 255, 0.16);
+      }
+      .dsh-rc-net-hint { margin-top: 8px; font-size: 11.5px; color: #d9a94a; line-height: 1.5; text-align: center; }
 
       .dsh-rc-qr-foot {
         display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -431,7 +443,8 @@ window.__ModuleLoader__.load({
         signal: controller.signal,
         cache: "no-store",
         credentials: "omit",
-        headers: { Accept: "application/json" },
+        headers: Object.assign({ Accept: "application/json" }, opts.headers || {}),
+        ...(opts.body === undefined ? {} : { body: opts.body }),
       })
         .then((res) => {
           return res
@@ -481,6 +494,8 @@ window.__ModuleLoader__.load({
 
       let lastError = null;
       let sawForeignService = false;
+      let sawPluginService = false;
+      let pluginServiceDiagnostic = "";
 
       function fetchState(port) {
         return fetchJson("http://127.0.0.1:" + port + "/api/desktop/state", {
@@ -491,7 +506,9 @@ window.__ModuleLoader__.load({
       function tryPort(index) {
         if (index >= ports.length) {
           const finalError = new Error(
-            sawForeignService
+            sawPluginService && pluginServiceDiagnostic
+              ? pluginServiceDiagnostic + "请确认部署的是最新版本并重启 DeepSeek Harness。"
+              : sawForeignService
               ? "本机端口上存在其它 HTTP 服务，但未找到符合约定的桌面端远控服务（/api/health 缺少 mode 字段）。请确认插件版本与部署是否最新。"
               : "未找到运行中的桌面端远控服务（已尝试 127.0.0.1:" +
                   PORT_START +
@@ -518,19 +535,17 @@ window.__ModuleLoader__.load({
               return tryPort(index + 1);
             }
             return fetchState(port).catch((stateError) => {
-              // 已命中本插件服务，但桌面接口不可用：直接报错，避免误连其它实例
-              const err = new Error(
-                "已找到桌面端服务（端口 " +
-                  port +
-                  "，mode=" +
-                  mode +
-                  "），但桌面接口不可用（" +
-                  (stateError && stateError.message ? stateError.message : "未知错误") +
-                  "）。请确认部署的是最新版本并重启 DeepSeek Harness。"
-              );
-              err.probe = true;
-              err.cause = stateError;
-              throw err;
+              // 命中本插件服务但接口失败（可能是该实例卡住/超时）。
+              // 记下诊断信息并继续尝试其它端口 —— 同机上可能存在多个实例，
+              // 健康的那个不应该被卡住的端口连累。
+              sawPluginService = true;
+              pluginServiceDiagnostic =
+                "已找到桌面端服务（端口 " + port + "，mode=" + mode +
+                "），但桌面接口不可用（" +
+                (stateError && stateError.message ? stateError.message : "未知错误") +
+                "）。";
+              lastError = stateError;
+              return tryPort(index + 1);
             });
           })
           .catch((err) => {
@@ -564,6 +579,9 @@ window.__ModuleLoader__.load({
       const altUrls = Array.isArray(source.altUrls)
         ? source.altUrls.filter((u) => typeof u === "string" && /^https?:\/\//i.test(u) && u !== source.pairingUrl)
         : [];
+      const candidates = Array.isArray(source.candidates)
+        ? source.candidates.filter((ip) => typeof ip === "string")
+        : [];
       const deviceCount = Number.isFinite(source.deviceCount)
         ? Math.max(0, Math.trunc(source.deviceCount))
         : 0;
@@ -579,6 +597,7 @@ window.__ModuleLoader__.load({
         qrDataUrl: qrDataUrl,
         pairingUrl: pairingUrl,
         altUrls: altUrls,
+        candidates: candidates,
         deviceCount: deviceCount,
         lanIp: lanIp,
         port: portNumber,
@@ -708,6 +727,8 @@ window.__ModuleLoader__.load({
       const basePortRef = useRef(null);
       const lastSnapshotRef = useRef(null);
       const cachedUrlRef = useRef(readCachedPairingUrl());
+      const lastCandidatesRef = useRef([]);
+      const [netHint, setNetHint] = useState("");
       const toastTimerRef = useRef(null);
       const copyTimerRef = useRef(null);
 
@@ -729,6 +750,16 @@ window.__ModuleLoader__.load({
       }, []);
 
       const commitSnapshot = useCallback((next) => {
+        // Tailscale 掉线检测：上一轮还有 100.x 候选、这一轮没有了 → 明确告知用户，
+        // 否则面板"悄悄"切回局域网地址，手机会一直连不上且看不出原因。
+        const prev = lastCandidatesRef.current || [];
+        const now = Array.isArray(next.candidates) ? next.candidates : [];
+        const isTailscale = (ip) => /^100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\./.test(ip);
+        const hadTs = prev.some(isTailscale);
+        const hasTs = now.some(isTailscale);
+        if (hadTs && !hasTs) setNetHint("Tailscale 已断开，当前显示局域网入口；重新连接后会自动切回。");
+        else if (!hadTs && hasTs) setNetHint("");
+        lastCandidatesRef.current = now;
         lastSnapshotRef.current = next;
         setSnapshot(next);
         if (next.pairingUrl) {
@@ -817,11 +848,14 @@ window.__ModuleLoader__.load({
         [commitSnapshot, loadState]
       );
 
-      const postDesktop = useCallback((path) => {
+      const postDesktop = useCallback((path, body) => {
         const port = basePortRef.current || CANDIDATE_PORTS[0];
         return fetchJson("http://127.0.0.1:" + port + path, {
           method: "POST",
           timeout: REQUEST_TIMEOUT_MS,
+          ...(body === undefined
+            ? {}
+            : { headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }),
         });
       }, []);
 
@@ -922,6 +956,33 @@ window.__ModuleLoader__.load({
         if (!ok) setActionError("打开浏览器失败，请手动复制配对链接。");
       }, []);
 
+      // 网卡标签：Tailscale(100.64/10) → Tailscale；其余按网段给可读名
+      const netChipLabel = (ip) => {
+        if (/^100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\./.test(ip)) return "Tailscale";
+        if (/^192\.168\.137\./.test(ip)) return "热点";
+        if (/^192\.168\.|^10\.|^172\.(1[6-9]|2\d|3[01])\./.test(ip)) return "局域网";
+        return ip;
+      };
+
+      // 手动切到指定网卡：只改配对地址与二维码，token 不变，已连手机不受影响
+      const handleUseIp = useCallback(
+        (ip) => {
+          if (busy) return;
+          setActionError("");
+          setBusy("net");
+          postDesktop("/api/desktop/use-ip", { ip: ip })
+            .then((data) => {
+              const applied = applyStateResponse(data);
+              if (applied) showToast("已切换到 " + netChipLabel(ip));
+            })
+            .catch((err) => setActionError("切换连接方式失败：" + describeError(err)))
+            .finally(() => {
+              if (mountedRef.current) setBusy("");
+            });
+        },
+        [busy, postDesktop, applyStateResponse, showToast]
+      );
+
       const handleRetry = useCallback(() => {
         setActionError("");
         loadState("manual");
@@ -940,6 +1001,7 @@ window.__ModuleLoader__.load({
       }
 
       const altUrls = (snap && Array.isArray(snap.altUrls) ? snap.altUrls : []).slice(0, 4);
+      const candidates = snap && Array.isArray(snap.candidates) ? snap.candidates : [];
 
       const statusLabel =
         statusKind === "error"
@@ -1138,25 +1200,29 @@ window.__ModuleLoader__.load({
               e("span", null, "在浏览器中打开配对页"),
               e("span", { className: "dsh-rc-link-icon", "aria-hidden": "true" }, IconExternal(11))
             ),
-            altUrls.length > 0
+            candidates.length > 1
               ? e(
                   "div",
-                  { className: "dsh-rc-alturls" },
-                  e("div", { className: "dsh-rc-alturls-hint" }, "其他网络入口（手机连对应网络后打开）："),
-                  altUrls.map((u) =>
+                  { className: "dsh-rc-net" },
+                  e("span", { className: "dsh-rc-net-label" }, "连接方式"),
+                  candidates.map((ip) =>
                     e(
                       "button",
                       {
-                        key: u,
+                        key: ip,
                         type: "button",
-                        className: "dsh-rc-link",
-                        onClick: () => copyText(u).then(() => showToast("已复制备选链接")),
+                        className:
+                          "dsh-rc-net-chip" + (snap && snap.lanIp === ip ? " dsh-rc-net-chip-on" : ""),
+                        title: ip + ":" + (snap ? snap.port : ""),
+                        onClick: () => handleUseIp(ip),
                       },
-                      e("span", { className: "dsh-rc-alturls-url" }, u.replace(/^https?:\/\//, "").split("/")[0]),
-                      e("span", { className: "dsh-rc-link-icon", "aria-hidden": "true" }, IconCopy(11))
+                      netChipLabel(ip)
                     )
                   )
                 )
+              : null,
+            netHint
+              ? e("div", { className: "dsh-rc-net-hint" }, netHint)
               : null
           )
         );

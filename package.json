@@ -32,7 +32,7 @@
   },
   "scripts": {
     "start": "node src/index.mjs",
-    "test": "node test/verify-server.mjs && node test/host-bridge.test.mjs && node test/approval-bridge.test.mjs && node test/questions-bridge.test.mjs && node --test test/image-upload.test.mjs",
+    "test": "node test/verify-server.mjs && node test/host-bridge.test.mjs && node test/approval-bridge.test.mjs && node test/questions-bridge.test.mjs && node --test test/image-upload.test.mjs test/network-helper.test.mjs",
     "deploy": "node scripts/deploy.mjs",
     "deploy:dry": "node scripts/deploy.mjs --dry-run"
   },

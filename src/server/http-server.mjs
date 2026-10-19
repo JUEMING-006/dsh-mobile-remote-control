@@ -102,6 +102,8 @@ export class RemoteControlServer {
     this.token = this.fixedToken || generateToken();
     this.state = 'stopped';
     this.lanIp = '127.0.0.1';
+    // 面板手动指定配对网卡（null = 自动：Tailscale 优先，否则默认路由/WLAN）
+    this.preferredIpOverride = null;
     this.qrDataUrl = null;
     this.server = null;
     this.wsHub = null;
@@ -154,7 +156,13 @@ export class RemoteControlServer {
     //
     // 注意：二维码必须与 pairingUrl 同步更新（await），否则会返回"新地址 + 旧二维码"
     // 的组合，手机扫到的是上一个地址。
-    const preferredIp = getPairingPrimaryIP();
+    const ifaces = getLocalIPAddresses(); // 一次调用（内部有缓存），避免重复阻塞
+    const candidates = ifaces.map((entry) => entry.address);
+    const override = this.preferredIpOverride && candidates.includes(this.preferredIpOverride)
+      ? this.preferredIpOverride
+      : null;
+    const tailscaleIp = candidates.find((ip) => /^100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\./.test(ip));
+    const preferredIp = override || tailscaleIp || candidates[0] || '127.0.0.1';
     if (preferredIp && preferredIp !== '127.0.0.1' && preferredIp !== this.lanIp) {
       this.lanIp = preferredIp;
       try {
@@ -169,8 +177,7 @@ export class RemoteControlServer {
         // 生成失败时保留旧二维码，下一轮轮询会重试；绝不让二者指向不同地址
       }
     }
-    const altUrls = getLocalIPAddresses()
-      .map((entry) => entry.address)
+    const altUrls = candidates
       .filter((ip) => ip !== this.lanIp)
       .map((ip) => 'http://' + ip + ':' + this.port + '/?token=' + this.token);
     return {
@@ -180,6 +187,8 @@ export class RemoteControlServer {
       port: this.port,
       pairingUrl: this.getPairingUrl(),
       altUrls,
+      candidates,
+      preferredIpOverride: override,
       qrDataUrl: this.qrDataUrl,
       deviceCount: this.deviceCount,
       version: this.version,
@@ -353,6 +362,7 @@ export class RemoteControlServer {
     // ── desktop pairing API (loopback only) ───────────────────────────────
     const isDesktopRoute =
       pathname === '/api/desktop/state' ||
+      pathname === '/api/desktop/use-ip' ||
       pathname === '/api/desktop/refresh' ||
       pathname === '/api/desktop/stop' ||
       pathname === '/api/status' ||
@@ -365,6 +375,23 @@ export class RemoteControlServer {
       }
       if (pathname === '/api/desktop/state') {
         this.json(res, 200, await this.desktopState(), true);
+        return;
+      }
+      if (pathname === '/api/desktop/use-ip' && req.method === 'POST') {
+        try {
+          const body = await readBody(req, 4096);
+          const ip = typeof body.ip === 'string' ? body.ip.trim() : '';
+          // 只接受本机真实网卡地址；空字符串表示恢复自动
+          if (!ip) this.preferredIpOverride = null;
+          else if (getLocalIPAddresses().some((entry) => entry.address === ip)) this.preferredIpOverride = ip;
+          else {
+            this.json(res, 400, { error: 'unknown local address' }, true);
+            return;
+          }
+          this.json(res, 200, await this.desktopState(), true);
+        } catch (error) {
+          this.json(res, 400, { error: String((error && error.message) || error) }, true);
+        }
         return;
       }
       if (pathname === '/api/desktop/refresh' && req.method === 'POST') {
