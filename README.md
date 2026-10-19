@@ -8,6 +8,8 @@
 - **无云端依赖**：手机与电脑之间不经过任何第三方服务器；直连局域网，或走你自己的 VPN（如 Tailscale）端到端加密隧道。不需要公网 IP、域名或托管服务。
 - **真实数据**：会话、消息、模型、文件改动全部来自 DSH Host；仓库内不包含任何硬编码的假会话、假 diff 或假套餐。
 
+**能力分类**：集成与连接（Integration & Connection） · **许可证**：MIT · **平台**：Windows 桌面端
+
 **环境要求**
 
 | 项 | 要求 |
@@ -16,6 +18,20 @@
 | 操作系统 | Windows（沙箱/权限相关代码针对 win32） |
 | Node.js | 24.x（仓库 CI 使用 Node 24；仅源码部署需要） |
 | 手机 | 任意现代浏览器（iOS Safari / Android Chrome / 微信内置浏览器） |
+
+## 安装命令
+
+在终端中执行（`--profile` 换成你的 DSH profile 名，桌面端通常为 `desktop`）：
+
+    # 已发布 npm 包时（本包尚未发布到 npm，见下方说明）
+    dsh plugin --profile desktop add dsh-mobile-remote-control
+
+    # 直接从 GitHub 源码安装（当前可用）
+    dsh plugin --profile desktop add github:JUEMING-006/dsh-mobile-remote-control
+
+装好后**完全退出并重启 DeepSeek Harness**，左侧边栏账号行会出现「手机远控」图标。
+
+> **npm 发布状态**：本包尚未发布到 npm，因此 DSH 内置「插件中心」暂时搜不到它（插件中心只展示能用 npm 一键安装的包）。当前请使用上面的 `github:` 源码安装命令，或在 DSH 界面里用「插件 → 添加插件」粘贴仓库地址。包发布到 npm 后，第一条命令即可直接使用。
 
 ## 快速开始
 
