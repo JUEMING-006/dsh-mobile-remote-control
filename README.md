@@ -23,11 +23,13 @@
 
 在终端中执行（`--profile` 换成你的 DSH profile 名，桌面端通常为 `desktop`）：
 
-    # 已发布 npm 包时（本包尚未发布到 npm，见下方说明）
-    dsh plugin --profile desktop add dsh-mobile-remote-control
+```bash
+# 已发布 npm 包时（本包尚未发布到 npm，见下方说明）
+dsh plugin --profile desktop add dsh-mobile-remote-control
 
-    # 直接从 GitHub 源码安装（当前可用）
-    dsh plugin --profile desktop add github:JUEMING-006/dsh-mobile-remote-control
+# 直接从 GitHub 源码安装（当前可用）
+dsh plugin --profile desktop add github:JUEMING-006/dsh-mobile-remote-control
+```
 
 装好后**完全退出并重启 DeepSeek Harness**，左侧边栏账号行会出现「手机远控」图标。
 
@@ -53,26 +55,28 @@
 
 ## 架构
 
-    ┌──────────────────────── Windows / 局域网或 VPN ────────────────────────┐
-    │                                                                        │
-    │  手机浏览器                                                            │
-    │  http://<电脑IP>:5288x/?token=…                                        │
-    │      │  HTTP REST + WebSocket /ws（X-Remote-Token 鉴权）               │
-    │      ▼                                                                 │
-    │  ┌──────────────────────── DeepSeek Harness 桌面进程 ───────────────┐  │
-    │  │  dsh-mobile-remote-control Host 插件                              │  │
-    │  │  ├─ HostBridge          sessionController / workspaceRegistry     │  │
-    │  │  │                      / workspaceChanges / ctx 事件             │  │
-    │  │  ├─ ApprovalBridge      approval/request 转发（prepend 优先）       │  │
-    │  │  ├─ QuestionsBridge     user-questions/request 转发               │  │
-    │  │  ├─ RemoteControlServer 0.0.0.0:52880…（占用则顺延）             │  │
-    │  │  │                      ├─ 手机端静态资源 + /api/* + /ws          │  │
-    │  │  │                      └─ /api/desktop/*（仅 loopback）          │  │
-    │  │  └─ client 插件          侧边栏账号行「手机远控」按钮 + 扫码弹窗   │  │
-    │  │                          127.0.0.1:52880… 探测并轮询状态          │  │
-    │  └──────────────────────────────────────────────────────────────────┘  │
-    │                                                                        │
-    └────────────────────────────────────────────────────────────────────────┘
+```text
+┌──────────────────────── Windows / 局域网或 VPN ────────────────────────┐
+│                                                                        │
+│  手机浏览器                                                            │
+│  http://<电脑IP>:5288x/?token=…                                        │
+│      │  HTTP REST + WebSocket /ws（X-Remote-Token 鉴权）               │
+│      ▼                                                                 │
+│  ┌──────────────────────── DeepSeek Harness 桌面进程 ───────────────┐  │
+│  │  dsh-mobile-remote-control Host 插件                              │  │
+│  │  ├─ HostBridge          sessionController / workspaceRegistry     │  │
+│  │  │                      / workspaceChanges / ctx 事件             │  │
+│  │  ├─ ApprovalBridge      approval/request 转发（prepend 优先）       │  │
+│  │  ├─ QuestionsBridge     user-questions/request 转发               │  │
+│  │  ├─ RemoteControlServer 0.0.0.0:52880…（占用则顺延）             │  │
+│  │  │                      ├─ 手机端静态资源 + /api/* + /ws          │  │
+│  │  │                      └─ /api/desktop/*（仅 loopback）          │  │
+│  │  └─ client 插件          侧边栏账号行「手机远控」按钮 + 扫码弹窗   │  │
+│  │                          127.0.0.1:52880… 探测并轮询状态          │  │
+│  └──────────────────────────────────────────────────────────────────┘  │
+│                                                                        │
+└────────────────────────────────────────────────────────────────────────┘
+```
 
 数据流：桌面端 client 插件调用 `/api/desktop/state` 拿到二维码与配对链接 → 手机扫码后用 token 访问移动端 API / WS → HostBridge 把请求转发到 DSH 真实服务，并把 `api-session/status`、`agent/assistant-stream`、`session/event` 等实时事件规范化为 WebSocket 消息推给手机。
 
@@ -98,6 +102,7 @@
 | `scripts/deploy.mjs` | 把插件文件同步到 DSH Desktop profile 的部署脚本（目标目录取自包名） |
 | `scripts/rename-package.mjs` | 发布前一键改名（包名/client id/bundle patch/mock/测试/文档 + npm pack 校验） |
 | `scripts/gen-market-index.mjs` | 生成 `market/index.json`（git source 自动填 40 位 commit，或 `--source=npm`） |
+| `CONTRIBUTING.md` | 开发环境、测试说明、代码约定、发布流程（面向贡献者） |
 | `.github/workflows/test.yml` | CI：windows-latest + Node 24，跑全部测试 |
 | `.github/workflows/release.yml` | 推 `v*` tag 时校验版本并 `npm publish`（NPM_TOKEN） |
 | `test/verify-server.mjs` | HTTP / WS / 鉴权 / 桌面 API 集成验证 |
@@ -286,7 +291,9 @@ DSH 没有官方插件市场：市场里的每个索引源都由作者自建并�
 
 在 DSH Web 的 **插件 → 添加插件** 输入框中粘贴本仓库地址：
 
-    https://github.com/JUEMING-006/dsh-mobile-remote-control
+```
+https://github.com/JUEMING-006/dsh-mobile-remote-control
+```
 
 DSH 会把它当作 git 仓库克隆安装。
 
@@ -297,7 +304,9 @@ DSH 会把它当作 git 仓库克隆安装。
 1. 打开 DSH Web 侧边栏 **插件**，在 Experimental plugins 的 **More** 页开启 **Custom plugin markets**（对应可选 bundle `@deepseek-ai/dsh-experimental-plugin-market-bundle`；开启后出现 **Discover** 标签）。
 2. **插件 → Discover → 添加索引源**，填入市场索引 URL：
 
-       https://JUEMING-006.github.io/dsh-mobile-remote-control/market/index.json
+```
+https://JUEMING-006.github.io/dsh-mobile-remote-control/market/index.json
+```
 
 3. 在 Discover 里搜索「移动端远程控制」或 Mobile Remote Control → **安装** → 确认 trust 提示 → **立即启用**。
 4. **完全退出并重启 DeepSeek Harness**。
@@ -308,7 +317,9 @@ DSH 会把它当作 git 仓库克隆安装。
 
 1. 在本仓库执行 `npm install` 后打包：
 
-       npm pack
+```bash
+npm pack
+```
 
    得到 `dsh-mobile-remote-control-<version>.tgz`。
 2. DSH Web → 插件 → **添加插件** → 在 package 输入框粘贴 tarball 的**绝对路径**（例如 `D:\dist\dsh-mobile-remote-control-2.0.0.tgz`）→ **安装** → **立即启用**。
@@ -318,9 +329,11 @@ DSH 会把它当作 git 仓库克隆安装。
 
 要求：Windows + DeepSeek Harness 桌面端；本仓库依赖 qrcode 与 ws。
 
-    npm install            # 安装依赖
-    npm run deploy:dry     # 预览将要同步的文件（不写盘）
-    npm run deploy         # 同步到 %USERPROFILE%\.dsh\profiles\desktop\node_modules\dsh-mobile-remote-control
+```bash
+npm install            # 安装依赖
+npm run deploy:dry     # 预览将要同步的文件（不写盘）
+npm run deploy         # 同步到 %USERPROFILE%\.dsh\profiles\desktop\node_modules\dsh-mobile-remote-control
+```
 
 `scripts/deploy.mjs` 的目标目录取自 `package.json` 的 `name`，只同步 `src/`、`client/`、`package.json`、`cordis.patch.yml`、`README.md`；幂等、不删除目标目录中的其它文件。若目标目录是指向本仓库的 junction/symlink，脚本会跳过拷贝（仓库即产物）。同步完成后**完全退出并重启 DeepSeek Harness**。
 
@@ -359,39 +372,9 @@ DSH 会把它当作 git 仓库克隆安装。
 7. 手机端需要重新扫码配对（token 属于每次启动/刷新生成的，与包名无关）；旧浏览器 localStorage 里的配对链接缓存键（<code>dsh-remote-control:last-pairing-url</code>）不再使用，无数据风险。
 <!-- rename-script:keep-end -->
 
-## 发布（维护者）
+## 开发与贡献
 
-本仓库已执行过改名脚本。如果将来需要再改包名，可重新运行（幂等，默认目标 `dsh-mobile-remote-control`，一条命令改完包名、client 插件 id、bundle patch、mock 数据、测试注释与文档，并跑 `npm pack` 校验文件清单）：
-
-    node scripts/rename-package.mjs --dry-run   # 预览
-    node scripts/rename-package.mjs             # 执行改名
-
-然后用市场索引生成器生成 `market/index.json`（git 仓库就绪后自动填 git source + 40 位 commit；没有 git 时用 `--source=npm`）：
-
-    node scripts/gen-market-index.mjs --source=npm --index-url=https://<user>.github.io/<repo>/market/index.json
-
-GitHub Actions：`.github/workflows/test.yml` 在 push/PR 跑全部测试；`.github/workflows/release.yml` 在推 `v*` tag 时校验 tag 与版本一致并 `npm publish`（需要仓库 secret `NPM_TOKEN`）。完整发布清单、官方校验器输出、npm pack 清单与迁移核对见仓库内 `.verify/design/release.md`（内部文档，不随包发布）。
-
-## 开发与测试
-
-    npm install
-    npm test               # 服务器协议/鉴权/桌面 API + HostBridge/审批/提问/图片上传/网卡性能
-    npm start              # 独立运行 mock 模式（不连接 DSH Host，仅用于 UI 联调）
-
-测试套件共 76 项断言/用例：
-
-| 测试文件 | 覆盖 |
-|---|---|
-| `test/verify-server.mjs` | 26 项：HTTP、WS、鉴权、桌面 API、审批/提问能力字段、账户/插件/用量契约 |
-| `test/host-bridge.test.mjs` | 10 项：会话过滤、消息规范化、实时跟随、命令转发、用量回归 |
-| `test/approval-bridge.test.mjs` | 13 项：审批抢占、超时、中止、释放、重复应答 |
-| `test/questions-bridge.test.mjs` | 12 项：批量完整性校验、部分答案拒绝、自由文本 |
-| `test/image-upload.test.mjs` | 10 项：媒体类型、base64 规范、magic number、大小上限、收据生命周期 |
-| `test/network-helper.test.mjs` | 5 项：首调不阻塞、缓存命中、Tailscale 优先、token 熵 |
-
-- 独立运行时 `/api/health` 返回 mode 为 mock，桌面弹窗与移动端界面会明确标注 mock，绝不冒充真实数据。
-- 视觉核对：直接用浏览器打开 `client/preview.html`；它使用与组件完全相同的 CSS，包含完整弹窗与状态胶囊示例。
-- 端到端验证：`test/e2e/` 用第二个 DSH 实例（独立 profile 与端口）加载真实 `~/.dsh` 数据，验证列表、历史、发送、打断、切换模型与文件改动。
+本 README 面向使用者。开发环境搭建、测试套件说明、代码结构约定与发布流程见 [CONTRIBUTING.md](CONTRIBUTING.md)。
 
 ## 已知限制
 
@@ -409,27 +392,29 @@ GitHub Actions：`.github/workflows/test.yml` 在 push/PR 跑全部测试；`.gi
 
 本项目使用 **MIT License**，全文见 [LICENSE](LICENSE)。
 
-    MIT License
+```text
+MIT License
 
-    Copyright (c) 2026 JUEMING-006
+Copyright (c) 2026 JUEMING-006
 
-    Permission is hereby granted, free of charge, to any person obtaining a copy
-    of this software and associated documentation files (the "Software"), to deal
-    in the Software without restriction, including without limitation the rights
-    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-    copies of the Software, and to permit persons to whom the Software is
-    furnished to do so, subject to the following conditions:
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
 
-    The above copyright notice and this permission notice shall be included in all
-    copies or substantial portions of the Software.
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
 
-    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-    SOFTWARE.
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
 
 ### 第三方依赖
 
