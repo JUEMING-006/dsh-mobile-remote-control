@@ -4,7 +4,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import QRCode from 'qrcode';
-import { getPrimaryLANIP, getLocalIPAddresses, generateToken } from './network-helper.mjs';
+import { getPrimaryLANIP, getPairingPrimaryIP, getLocalIPAddresses, generateToken } from './network-helper.mjs';
 import { WsHub } from './ws-hub.mjs';
 import { MAX_UPLOAD_BYTES } from './host-bridge.mjs';
 
@@ -148,8 +148,22 @@ export class RemoteControlServer {
   }
 
   desktopState() {
-    // 备选入口：多网卡时（WLAN + Tailscale/热点等）全部列出，主 URL 进二维码，
-    // 其余给「复制链接」下拉/列表使用 —— 手机走哪条网络都能连。
+    // 主配对 IP 自动跟随网络变化（如刚打开 Tailscale）：下一次面板轮询（2s）即自动
+    // 切换到新地址并重绘二维码，无需手动「刷新二维码」。token 不轮换，已连接的
+    // 手机不会被踢。备选入口列出其余网卡的配对 URL。
+    const preferredIp = getPairingPrimaryIP();
+    if (preferredIp && preferredIp !== '127.0.0.1' && preferredIp !== this.lanIp) {
+      this.lanIp = preferredIp;
+      QRCode.toDataURL(this.getPairingUrl(), {
+        width: 360,
+        margin: 1,
+        errorCorrectionLevel: 'M',
+        color: { dark: '#0a0a0a', light: '#ffffff' },
+      }).then((dataUrl) => {
+        this.qrDataUrl = dataUrl;
+        this.lastQrAt = Date.now();
+      }).catch(() => {});
+    }
     const altUrls = getLocalIPAddresses()
       .map((entry) => entry.address)
       .filter((ip) => ip !== this.lanIp)

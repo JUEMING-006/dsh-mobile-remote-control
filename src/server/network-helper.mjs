@@ -98,6 +98,19 @@ export function getPrimaryLANIP() {
 }
 
 /**
+ * 配对主 IP 的自动策略：
+ * - Tailscale 在线（存在 100.64/10 地址）时优先它 —— 用户开了 VPN 就是想跨网连，
+ *   局域网地址在 AP 隔离下反而不可达。
+ * - 否则回落默认行为（默认路由网卡 > WLAN > 以太网）。
+ */
+export function getPairingPrimaryIP() {
+  const ips = getLocalIPAddresses();
+  const tailscale = ips.find((entry) => /^100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\./.test(entry.address));
+  if (tailscale) return tailscale.address;
+  return ips.length > 0 ? ips[0].address : '127.0.0.1';
+}
+
+/**
  * 生成 32 字节高熵十六进制 Token (64 位字符串)
  */
 export function generateToken() {
